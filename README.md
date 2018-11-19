@@ -1,6 +1,9 @@
 # IPMI to Zabbix Template
 This tool is designed to query a device IPMI interface and look for available items to monitor. Then using this information it creates an XML template for Zabbix to monitor these items.
 
+# Issues
+Only supports IPMI 1.5 right now. We are working on using a different IPMI module to handle IPMI 2.0.
+
 ## Initial Setup
 This Python script requires Python 2.6 or higher.
 
