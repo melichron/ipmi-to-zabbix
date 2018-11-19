@@ -27,7 +27,7 @@ This will connect to the IPMI interface on IP address 192.168.1.10 with the user
     * `lanplus` - IPMI 2.0
 * `--name` - This is the name of the template. This is what the template will be called in Zabbix once it is imported.
 * `--write` - This is the file to write the template to. If you want to just dump the XML to screen, then just leave this option off.
-* `--namespace` - This is the namespace of the key. To avoid conflicts with other IPMI keys in Zabbix you might want to use a name space to keep them separate. Otherwise you might end up with duplicate keys in Zabbix and Zabbix will complain.
+* `--namespace` - This is the namespace of the key. To avoid conflicts with other IPMI keys in Zabbix you might want to use a name space to keep them separate. Otherwise you might end up with duplicate keys in Zabbix and Zabbix will complain. This value is automatically converted to lowercase.
 
 The script only looks for IPMI values that are of type "Fan", "Temperature", and "Voltage". There might be other IPMI values that we can include, but those seem to be the only values available through Zabbix.
 
