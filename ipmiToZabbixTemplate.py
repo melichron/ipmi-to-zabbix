@@ -13,6 +13,7 @@ import argparse
 from pyghmi import exceptions, ipmi
 from logzero import logger
 from datetime import datetime
+from collections import OrderedDict
 from yattag import Doc, indent
 import sys
 import os
@@ -22,55 +23,59 @@ doc, tag, text = Doc().tagtext()
 sensors = ["Fan", "Temperature", "Voltage"]
 templates = {}
 ipmidata = {}
-itemdefaults = {
-    'type': '12',
-    'snmp_community': None,
-    'snmp_oid': None,
-    'delay': '240',
-    'history': '7d',
-    'trends': '90d',
-    'status': '0',
-    'allowed_hosts': None,
-    'snmpv3_contextname': None,
-    'snmpv3_securityname': None,
-    'snmpv3_securitylevel': '0',
-    'snmpv3_authprotocol': '0',
-    'snmpv3_authpassphrase': None,
-    'snmpv3_privprotocol': '0',
-    'snmpv3_passphrase': None,
-    'params': None,
-    'authtype': '0',
-    'username': None,
-    'password': None,
-    'publickey': None,
-    'privatekey': None,
-    'port': None,
-    'description': None,
-    'inventory_link': '0',
-    'valuemap': None,
-    'logtimefmt': None,
-    'preprocessing': None,
-    'jmx_endpoint': None,
-    'timeout': '3s',
-    'url': None,
-    'query_fields': None,
-    'posts': None,
-    'status_codes': '200',
-    'follow_redirects': '1',
-    'post_type': '0',
-    'http_proxy': None,
-    'headers': None,
-    'retrieve_mode': '0',
-    'request_method': '1',
-    'output_format': '0',
-    'allow_traps': '0',
-    'ssl_cert_file': None,
-    'ssl_key_file': None,
-    'ssl_key_password': None,
-    'verify_peer': '0',
-    'verify_host': '0',
-    'master_itme': None
-}
+itemdefaults = OrderedDict()
+itemdefaults['type'] = '12'
+itemdefaults['snmp_community'] = None
+itemdefaults['snmp_oid'] = None
+itemdefaults['delay'] = '240'
+itemdefaults['history'] = '90d'
+itemdefaults['trends'] = '365d'
+itemdefaults['status'] = '0'
+itemdefaults['value_type'] = '0'
+itemdefaults['allowed_hosts'] = None
+itemdefaults['snmpv3_contextname'] = None
+itemdefaults['snmpv3_securityname'] = None
+itemdefaults['snmpv3_securitylevel'] = '0'
+itemdefaults['snmpv3_authprotocol'] = '0'
+itemdefaults['snmpv3_authpassphrase'] = None
+itemdefaults['snmpv3_privprotocol'] = '0'
+itemdefaults['snmpv3_privpassphrase'] = None
+#itemdefaults['snmpv3_passphrase'] = None
+#itemdefaults['formula'] = '1'
+#itemdefaults['delay_flex'] = None
+itemdefaults['params'] = None
+itemdefaults['authtype'] = '0'
+itemdefaults['username'] = None
+itemdefaults['password'] = None
+itemdefaults['publickey'] = None
+itemdefaults['privatekey'] = None
+itemdefaults['port'] = None
+itemdefaults['description'] = None
+itemdefaults['inventory_link'] = '0'
+itemdefaults['valuemap'] = None
+itemdefaults['logtimefmt'] = None
+itemdefaults['preprocessing'] = None
+itemdefaults['jmx_endpoint'] = None
+itemdefaults['timeout'] = '3s'
+itemdefaults['url'] = None
+itemdefaults['query_fields'] = None
+itemdefaults['posts'] = None
+itemdefaults['status_codes'] = '200'
+itemdefaults['follow_redirects'] = '1'
+itemdefaults['post_type'] = '0'
+itemdefaults['http_proxy'] = None
+itemdefaults['headers'] = None
+itemdefaults['retrieve_mode'] = '0'
+itemdefaults['request_method'] = '0'
+itemdefaults['output_format'] = '0'
+itemdefaults['allow_traps'] = '0'
+itemdefaults['ssl_cert_file'] = None
+itemdefaults['ssl_key_file'] = None
+itemdefaults['ssl_key_password'] = None
+itemdefaults['verify_peer'] = '0'
+itemdefaults['verify_host'] = '0'
+itemdefaults['master_item'] = None
+
 
 def main(args):
     import pyghmi.ipmi.command
@@ -98,9 +103,9 @@ def main(args):
 
     with tag('zabbix_export'):
         with tag('version'):
-            text("3.4")
+            text("4.0")
         with tag('date'):
-            text(datetime.now().replace(microsecond=0).isoformat())
+            text(datetime.now().replace(microsecond=0).isoformat()+'Z')
         with tag('groups'):
             with tag('group'):
                 with tag('name'):
@@ -128,23 +133,31 @@ def main(args):
                             with tag('item'):
                                 with tag('name'):
                                     text(ipmidata[key].name)
-                                with tag('key'):
-                                    keydata = ipmidata[key].type + '.' + key.replace(' ', '_')
-                                    if args.namespace is not None:
-                                        keydata = args.namespace + '.' + keydata
-                                    text('ipmi.sensor.' + keydata.lower())
-                                with tag('units'):
-                                    text(ipmidata[key].units.replace('\xc2\xb0', ''))
-                                with tag('applications'):
-                                    with tag('application'):
-                                        with tag('name'):
-                                            text(ipmidata[key].type)
-                                for itemkey, itemdefault in itemdefaults.iteritems():
-                                    with tag(itemkey):
-                                        if itemdefault is None:
-                                            pass
-                                        else:
+                                for itemkey, itemdefault in itemdefaults.items():
+                                    if itemdefault is None:
+                                            doc.stag(itemkey)
+                                    else:
+                                        with tag(itemkey):
                                             text(itemdefault)
+                                    if itemkey is 'snmp_oid':
+                                        with tag('key'):
+                                            keydata = ipmidata[key].type + '.' + key.replace(' ', '_')
+                                            keydata = keydata.replace('+','plus')
+                                            if args.namespace is not None:
+                                                keydata = args.namespace + '.' + keydata
+                                            text('ipmi.sensor.' + keydata.lower())
+                                    if itemkey is 'allowed_hosts':
+                                            with tag('units'):
+                                                text(ipmidata[key].units.replace('\xc2\xb0', ''))
+                                    if itemkey is 'params':
+                                        with tag('ipmi_sensor'):
+                                            text(ipmidata[key].name)
+                                    if itemkey is 'inventory_link':
+                                        with tag('applications'):
+                                            with tag('application'):
+                                                with tag('name'):
+                                                    text(ipmidata[key].type)
+                             
                 with tag('discovery_rules'):
                     pass
                 with tag('httptests'):
